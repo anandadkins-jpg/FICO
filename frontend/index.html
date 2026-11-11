@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STACKLY FICO | General Ledger & GST</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Guaranteed inline navigation functions (independent of external file loading/caching)
+        function showSection(sectionId) {
+            console.log("Navigating to section:", sectionId);
+            var sections = ["dashboard", "ledger", "gst"];
+            for (var i = 0; i < sections.length; i++) {
+                var id = sections[i];
+                var el = document.getElementById(id);
+                var btn = document.getElementById("nav-" + id) || document.querySelector('[data-section="' + id + '"]');
+                if (el) {
+                    if (id === sectionId) {
+                        el.classList.remove("hidden");
+                        el.style.display = "block";
+                    } else {
+                        el.classList.add("hidden");
+                        el.style.display = "none";
+                    }
+                }
+                if (btn) {
+                    if (id === sectionId) {
+                        btn.classList.add("active");
+                    } else {
+                        btn.classList.remove("active");
+                    }
+                }
+            }
+
+            var title = document.getElementById("pageTitle");
+            var subtitle = document.getElementById("pageSubtitle");
+            if (title) {
+                if (sectionId === "dashboard") {
+                    title.textContent = "Dashboard Overview";
+                    if (subtitle) subtitle.textContent = "Enterprise Finance · General Ledger & GST Portal · Company Code 1000";
+                } else if (sectionId === "ledger") {
+                    title.textContent = "General Ledger";
+                    if (subtitle) subtitle.textContent = "Ledger Statements, Account Postings & Double-Entry Journals";
+                } else if (sectionId === "gst") {
+                    title.textContent = "Goods and Services Tax (GST)";
+                    if (subtitle) subtitle.textContent = "GST Invoicing, Inward/Outward Tax & Input Tax Credit (ITC)";
+                }
+            }
+
+            window.scrollTo({ top: 0, behavior: "smooth" });
+
+            try {
+                if (sectionId === "ledger") {
+                    if (typeof loadAccounts === "function") loadAccounts().catch(function(){});
+                    if (typeof loadJournals === "function") loadJournals().catch(function(){});
+                    if (typeof loadLedgerReport === "function") loadLedgerReport().catch(function(){});
+                } else if (sectionId === "gst") {
+                    if (typeof loadGstData === "function") loadGstData().catch(function(){});
+                } else if (sectionId === "dashboard") {
+                    if (typeof loadDashboardMetrics === "function") loadDashboardMetrics().catch(function(){});
+                }
+            } catch (err) {
+                console.error("Navigation load error:", err);
+            }
+        }
+
+        function switchGlTab(tabId) {
+            var tabs = ["ledgerBook", "accountsTab", "journalsTab"];
+            var tabMap = {
+                ledgerBook: "tabBtnLedgerBook",
+                accountsTab: "tabBtnAccounts",
+                journalsTab: "tabBtnJournals"
+            };
+
+            for (var i = 0; i < tabs.length; i++) {
+                var id = tabs[i];
+                var el = document.getElementById(id);
+                var btn = document.getElementById(tabMap[id]);
+                if (el) {
+                    if (id === tabId) {
+                        el.classList.remove("hidden");
+                        el.style.display = "block";
+                    } else {
+                        el.classList.add("hidden");
+                        el.style.display = "none";
+                    }
+                }
+                if (btn) {
+                    if (id === tabId) {
+                        btn.classList.add("active");
+                    } else {
+                        btn.classList.remove("active");
+                    }
+                }
+            }
+
+            try {
+                if (tabId === "ledgerBook" && typeof loadLedgerReport === "function") loadLedgerReport().catch(function(){});
+                if (tabId === "accountsTab" && typeof loadAccounts === "function") loadAccounts().catch(function(){});
+                if (tabId === "journalsTab" && typeof loadJournals === "function") loadJournals().catch(function(){});
+            } catch (err) {
+                console.error("Tab load error:", err);
+            }
+        }
+
+        window.showSection = showSection;
+        window.switchGlTab = switchGlTab;
+    </script>
+</head>
+<body>
+    <aside class="sidebar">
+        <h2>STACKLY <span>FICO</span></h2>
+        <p class="menu-title">FINANCE</p>
+        <button class="nav-btn active" id="nav-dashboard" data-section="dashboard" onclick="showSection('dashboard')">Dashboard</button>
+        <button class="nav-btn" id="nav-ledger" data-section="ledger" onclick="showSection('ledger')">General Ledger</button>
+        <button class="nav-btn" id="nav-gst" data-section="gst" onclick="showSection('gst')">GST</button>
+        <div class="sidebar-footer">Finance & Tax Module</div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h1 id="pageTitle">Dashboard Overview</h1>
+                <p id="pageSubtitle">Enterprise Finance · General Ledger & GST Portal · Company Code 1000</p>
+            </div>
+            <div id="connectionStatus" class="status">Checking backend...</div>
+        </header>
+
+        <!-- DASHBOARD SECTION -->
+        <section id="dashboard" class="section">
+            <div class="section-heading">
+                <div>
+                    <h2>Finance & Tax Dashboard</h2>
+                    <p>Executive view of General Ledger operations and GST compliance.</p>
+                </div>
+            </div>
+
+            <!-- DASHBOARD KPI CARDS: ONLY GENERAL LEDGER & GST -->
+            <div class="cards cards-4">
+                <div class="card">
+                    <p>General Ledger Postings</p>
+                    <h2 id="dashGlPostings">0</h2>
+                    <span style="font-size: 12px; color: #64748b;">Total Ledger Transactions</span>
+                </div>
+                <div class="card">
+                    <p>General Ledger Net Balance</p>
+                    <h2 id="dashGlBalance">₹0.00</h2>
+                    <span style="font-size: 12px; color: #64748b;">Debits vs Credits Balance</span>
+                </div>
+                <div class="card">
+                    <p>GST Invoices</p>
+                    <h2 id="gstCount">0</h2>
+                    <span style="font-size: 12px; color: #64748b;">Outward & Inward Invoices</span>
+                </div>
+                <div class="card">
+                    <p>Net GST Payable / (Credit)</p>
+                    <h2 id="netGstLiability">₹0.00</h2>
+                    <span style="font-size: 12px; color: #64748b;">Output Tax - Input Tax Credit</span>
+                </div>
+            </div>
+
+            <!-- DASHBOARD MODULE PANELS: GENERAL LEDGER & GST -->
+            <div class="cards" style="grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 10px;">
+                <div class="panel">
+                    <div class="section-heading">
+                        <div>
+                            <h3>General Ledger</h3>
+                            <p>Manage double-entry ledger books, chart of accounts, and balanced journal entries.</p>
+                        </div>
+                    </div>
+                    <div style="margin: 18px 0; font-size: 14px; line-height: 1.8; color: #475569;">
+                        <div>• Active Accounts: <strong id="glAccountsSummary">0</strong></div>
+                        <div>• Journal Postings: <strong id="glJournalsSummary">0</strong></div>
+                        <div>• Net Ledger Position: <strong id="glBalanceSummary">₹0.00</strong></div>
+                    </div>
+                    <button class="primary" onclick="showSection('ledger')">Open General Ledger →</button>
+                </div>
+
+                <div class="panel">
+                    <div class="section-heading">
+                        <div>
+                            <h3>Goods and Services Tax (GST)</h3>
+                            <p>Track sales and purchases, calculate CGST/SGST/IGST, and monitor Input Tax Credit (ITC).</p>
+                        </div>
+                    </div>
+                    <div style="margin: 18px 0; font-size: 14px; line-height: 1.8; color: #475569;">
+                        <div>• Total Taxable Turnover: <strong id="dashGstTurnover">₹0.00</strong></div>
+                        <div>• Output GST (Sales): <strong id="dashOutputGst">₹0.00</strong></div>
+                        <div>• Input Tax Credit (ITC): <strong id="dashItcGst">₹0.00</strong></div>
+                    </div>
+                    <button class="primary" onclick="showSection('gst')">Open GST Portal →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- GENERAL LEDGER SECTION -->
+        <section id="ledger" class="section hidden">
+            <div class="section-heading">
+                <div>
+                    <h2>General Ledger</h2>
+                    <p>View account balances, ledger statements, maintain accounts, and post journal entries.</p>
+                </div>
+            </div>
+
+            <div class="gl-tabs">
+                <button class="tab-btn active" id="tabBtnLedgerBook" onclick="switchGlTab('ledgerBook')">Ledger Book & Statements</button>
+                <button class="tab-btn" id="tabBtnAccounts" onclick="switchGlTab('accountsTab')">Chart of Accounts</button>
+                <button class="tab-btn" id="tabBtnJournals" onclick="switchGlTab('journalsTab')">Journal Entries</button>
+            </div>
+
+            <!-- TAB 1: LEDGER BOOK & STATEMENTS -->
+            <div id="ledgerBook" class="tab-content">
+                <div class="panel">
+                    <div class="section-heading">
+                        <h3>Account Ledger Statement</h3>
+                        <button class="secondary" onclick="loadLedgerReport()">Refresh Ledger</button>
+                    </div>
+
+                    <div class="filter-bar">
+                        <label>Filter by Account:
+                            <select id="ledgerAccountFilter" onchange="loadLedgerReport()">
+                                <option value="">All Accounts</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="calc-summary">
+                        <span>Total Debits: ₹<strong id="ledgerTotalDebit">0.00</strong></span>
+                        <span>Total Credits: ₹<strong id="ledgerTotalCredit">0.00</strong></span>
+                        <span>Net Ledger Balance: ₹<strong id="ledgerNetBalance">0.00</strong></span>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Posting Date</th>
+                                    <th>Document #</th>
+                                    <th>Account</th>
+                                    <th>Narration</th>
+                                    <th>Debit (₹)</th>
+                                    <th>Credit (₹)</th>
+                                    <th>Running Balance (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ledgerTableBody">
+                                <tr><td colspan="7">Loading ledger statements...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CHART OF ACCOUNTS -->
+            <div id="accountsTab" class="tab-content hidden">
+                <div class="panel">
+                    <h3 id="accountFormTitle">Create GL Account</h3>
+                    <form id="accountForm">
+                        <input type="hidden" id="accountId">
+                        <div class="form-grid">
+                            <label>Company Code
+                                <input id="companyCode" value="1000" required maxlength="10">
+                            </label>
+                            <label>Account Code
+                                <input id="accountCode" required maxlength="20" placeholder="100001">
+                            </label>
+                            <label>Account Name
+                                <input id="accountName" required maxlength="100" placeholder="Cash Account">
+                            </label>
+                            <label>Account Type
+                                <select id="accountType" required>
+                                    <option value="ASSET">ASSET</option>
+                                    <option value="LIABILITY">LIABILITY</option>
+                                    <option value="EQUITY">EQUITY</option>
+                                    <option value="REVENUE">REVENUE</option>
+                                    <option value="EXPENSE">EXPENSE</option>
+                                </select>
+                            </label>
+                            <label class="wide">Account Group
+                                <input id="accountGroup" required maxlength="50" placeholder="Current Assets">
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary" id="saveAccountBtn">Save Account</button>
+                            <button type="button" class="secondary" onclick="resetAccountForm()">Clear</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <div class="section-heading">
+                        <h3>Chart of Accounts List</h3>
+                        <button class="secondary" onclick="loadAccounts()">Refresh</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Group</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountTableBody">
+                                <tr><td colspan="7">Loading accounts...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: JOURNAL ENTRIES -->
+            <div id="journalsTab" class="tab-content hidden">
+                <div class="panel">
+                    <h3>Create Journal Entry</h3>
+                    <p>Post a double-entry balanced transaction across GL accounts.</p>
+                    <form id="journalForm">
+                        <div class="form-grid">
+                            <label>Company Code
+                                <input id="journalCompany" value="1000" required>
+                            </label>
+                            <label>Posting Date
+                                <input id="postingDate" type="date" required>
+                            </label>
+                            <label class="wide">Narration
+                                <input id="narration" required placeholder="Cash deposited into bank">
+                            </label>
+                        </div>
+
+                        <h4>Journal Lines</h4>
+                        <div id="journalLines"></div>
+                        <button type="button" class="secondary" onclick="addJournalLine()">+ Add Line</button>
+                        <div class="totals">
+                            <span>Total Debit: ₹<strong id="totalDebit">0.00</strong></span>
+                            <span>Total Credit: ₹<strong id="totalCredit">0.00</strong></span>
+                        </div>
+                        <button type="submit" class="primary">Post Journal Entry</button>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <div class="section-heading">
+                        <h3>Posted Journal Entries</h3>
+                        <button class="secondary" onclick="loadJournals()">Refresh</button>
+                    </div>
+                    <div id="journalList">Loading journal entries...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GST SECTION -->
+        <section id="gst" class="section hidden">
+            <div class="section-heading">
+                <div>
+                    <h2>Goods and Services Tax (GST)</h2>
+                    <p>Track sales and purchases, calculate CGST/SGST/IGST, and monitor Input Tax Credit (ITC).</p>
+                </div>
+                <button class="secondary" onclick="loadGstData()">Refresh GST Data</button>
+            </div>
+
+            <div class="cards cards-4">
+                <div class="card">
+                    <p>Total Outward Taxable (Sales)</p>
+                    <h2 id="gstOutwardTaxable">₹0.00</h2>
+                </div>
+                <div class="card">
+                    <p>Output GST (Tax on Sales)</p>
+                    <h2 id="gstOutputTax">₹0.00</h2>
+                </div>
+                <div class="card">
+                    <p>Input Tax Credit (ITC - Purchases)</p>
+                    <h2 id="gstItc">₹0.00</h2>
+                </div>
+                <div class="card">
+                    <p>Net GST Payable / (Credit)</p>
+                    <h2 id="gstNetPayable">₹0.00</h2>
+                </div>
+            </div>
+
+            <!-- GST INVOICE RECORDING FORM -->
+            <div class="panel">
+                <h3>Record GST Invoice / Transaction</h3>
+                <form id="gstForm">
+                    <div class="form-grid">
+                        <label>Company Code
+                            <input id="gstCompany" value="1000" required maxlength="10">
+                        </label>
+                        <label>Transaction Type
+                            <select id="gstType" required onchange="calculateGstPreview()">
+                                <option value="OUTWARD">Sales / Outward Supply (Output Tax)</option>
+                                <option value="INWARD">Purchase / Inward Supply (Input Tax Credit - ITC)</option>
+                            </select>
+                        </label>
+                        <label>Invoice Number
+                            <input id="gstInvoiceNo" placeholder="INV-2026-001" required maxlength="50">
+                        </label>
+                        <label>Invoice Date
+                            <input id="gstDate" type="date" required>
+                        </label>
+                        <label>Party Name (Customer / Vendor)
+                            <input id="gstParty" placeholder="Acme Technologies Pvt Ltd" required maxlength="100">
+                        </label>
+                        <label>Party GSTIN
+                            <input id="gstin" placeholder="33AAAAA1234A1Z5" required maxlength="15" style="text-transform: uppercase;">
+                        </label>
+                        <label>Supply Type
+                            <select id="gstSupplyType" required onchange="calculateGstPreview()">
+                                <option value="INTRA_STATE">Intra-State (Within State · CGST + SGST)</option>
+                                <option value="INTER_STATE">Inter-State (Outside State · IGST)</option>
+                            </select>
+                        </label>
+                        <label>HSN / SAC Code
+                            <input id="gstHsn" placeholder="998311" maxlength="20">
+                        </label>
+                        <label>Taxable Amount (₹)
+                            <input id="gstTaxable" type="number" min="0" step="0.01" value="10000.00" required oninput="calculateGstPreview()">
+                        </label>
+                        <label>GST Rate
+                            <select id="gstRate" required onchange="calculateGstPreview()">
+                                <option value="18">18% (Standard Rate)</option>
+                                <option value="12">12% (Standard Reduced)</option>
+                                <option value="5">5% (Essential Rate)</option>
+                                <option value="28">28% (Luxury / Higher Rate)</option>
+                                <option value="0">0% (Nil / Exempt)</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="calc-summary">
+                        <span>CGST: ₹<strong id="previewCgst">900.00</strong></span>
+                        <span>SGST: ₹<strong id="previewSgst">900.00</strong></span>
+                        <span>IGST: ₹<strong id="previewIgst">0.00</strong></span>
+                        <span>Total Invoice Amount: ₹<strong id="previewTotal">11,800.00</strong></span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="primary" id="saveGstBtn">Save GST Transaction</button>
+                        <button type="button" class="secondary" onclick="resetGstForm()">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- GST TRANSACTIONS REGISTER -->
+            <div class="panel">
+                <div class="section-heading">
+                    <h3>GST Invoices Register</h3>
+                    <div class="filter-bar" style="margin-bottom: 0;">
+                        <label>Filter:
+                            <select id="gstFilterType" onchange="loadGstTransactions()">
+                                <option value="">All Transactions</option>
+                                <option value="OUTWARD">Sales (Outward)</option>
+                                <option value="INWARD">Purchases (Inward)</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Party Name</th>
+                                <th>GSTIN</th>
+                                <th>Type</th>
+                                <th>Supply</th>
+                                <th>Taxable (₹)</th>
+                                <th>CGST (₹)</th>
+                                <th>SGST (₹)</th>
+                                <th>IGST (₹)</th>
+                                <th>Total (₹)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gstTableBody">
+                            <tr><td colspan="12">Loading GST records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- GST RATE BREAKDOWN -->
+            <div class="panel">
+                <h3>Rate-wise Tax Summary (GSTR Overview)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rate (%)</th>
+                                <th>Outward Taxable (Sales)</th>
+                                <th>Output Tax (₹)</th>
+                                <th>Inward Taxable (Purchases)</th>
+                                <th>ITC Eligible (₹)</th>
+                                <th>Net Liability (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gstRateTableBody">
+                            <tr><td colspan="6">Loading rate summary...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div id="message" class="message hidden" role="status"></div>
+    </main>
+
+    <script src="script.js?v=2.2"></script>
+</body>
+</html>

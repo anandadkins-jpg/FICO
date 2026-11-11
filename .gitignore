@@ -1,0 +1,29 @@
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment variables & secrets
+.env
+backend/.env
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
